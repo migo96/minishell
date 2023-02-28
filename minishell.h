@@ -6,7 +6,7 @@
 /*   By: migo <migo@student.42seoul.kr>             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/23 13:26:04 by migo              #+#    #+#             */
-/*   Updated: 2023/02/24 14:58:40 by migo             ###   ########.fr       */
+/*   Updated: 2023/02/27 17:29:58 by migo             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 
 # include <stdio.h>
 # include <unistd.h>
+# include <stdlib.h>
 
 typedef struct s_list
 {
@@ -41,3 +42,4 @@ typedef struct s_cmd
 // cmd1 | cmd2 | cmd3
 // 1       1     0
 // dup2(fd[1], 1) dup2(fd[0], 0) dup2(fd[1], 1) dup2(fd[0], 0)
+// 12$PATH34

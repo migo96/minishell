@@ -2,81 +2,146 @@
 # include <unistd.h>
 # include <stdlib.h>
 
-typedef struct s_list
+void	command_same(char **sep_pipe, int *flag)
 {
-	char	*env;
-	struct s_list *next;
-}	t_list;
-
-int	ft_strlen(char *str)
-{
-	int	i;
-
-	i = 0;
-	while (str[i])
-		i++;
-	return (i);
+	(*flag) = 0;
+	while (**sep_pipe == ' ' && **sep_pipe)
+		(*sep_pipe)++;
+	if (**sep_pipe == '<' || **sep_pipe == '>')
+	{
+		if ((*sep_pipe)[1] == '<' || (*sep_pipe)[1] == '>')
+			(*sep_pipe)++;
+		(*flag) = 1;
+		(*sep_pipe)++;
+	}
+	while (**sep_pipe == ' ' && **sep_pipe)
+		(*sep_pipe)++;
 }
 
-int	num_env_word(char *str, t_list *env)
-{
-	int	i;
+void  flag_quote(char **sep_pipe, int *quote_flag)
+{  
+    if (**sep_pipe == '\'' || **sep_pipe == '\"')
+    {
+        if (*quote_flag == 0)
+            *quote_flag = 1;
+        else
+        {
+            *quote_flag = 0;
+        }
+    }
+}
 
-	while (env)
+int	num_option(char *sep_pipe)
+{
+	int		count;
+	int		flag;
+	int		quote_flag;
+
+	count = 0;
+	quote_flag = 0;
+	while (*sep_pipe)
 	{
-		i = 0;
-		while (str[i] && str[i] != ' ' && str[i] != '$')
+		command_same(&sep_pipe, &flag);
+		while ((*sep_pipe != ' ' && *sep_pipe) || quote_flag)
 		{
-			if (str[i] != env->env[i])
+			flag_quote(&sep_pipe, &quote_flag);
+			if ((*sep_pipe == '<' || *sep_pipe == '>') && quote_flag == 0)
 				break ;
+			sep_pipe++;
+		}
+		if (flag == 0 && sep_pipe[-1] != ' ')
+			count++;
+	}
+	return (count);
+}
+
+void	word_count(char **option, char *sep_pipe)
+{
+	int		word_count;
+	int		flag;
+	int		quote_flag;
+	int		i;
+
+	i = 0;
+	quote_flag = 0;
+	while (*sep_pipe)
+	{
+		word_count = 0;
+		command_same(&sep_pipe, &flag);
+		while ((*sep_pipe != ' ' && *sep_pipe) || quote_flag)
+		{
+			flag_quote(&sep_pipe, &quote_flag);
+			if ((*sep_pipe == '<' || *sep_pipe == '>') && quote_flag == 0)
+				break ;
+			word_count++;
+			sep_pipe++;
+		}
+		if (flag == 0 && sep_pipe[-1] != ' ')
+		{
+			option[i] = malloc(sizeof(char) * word_count + 1);
+			if (option[i] == NULL)
+				return ;
+			option[i][word_count] = '\0';
 			i++;
 		}
-		if (env->env[i] == '=' && (str[i] == '$' || str[i] == ' ' || str[i] == '\0'))
-			return (ft_strlen(&(env->env[i + 1])));
-		env = env->next;
 	}
-	while (str[i] && str[i] != ' ' && str[i] != '$')
-		i++;
-	return (-i - 1);
 }
 
-
-char	*quote(char *str, t_list *env)
+void	put_word(char **option, char *sep_pipe)
 {
-	int		i;
-	int		j;
+	int		word_count;
 	int		flag;
-	char	*src;
+	int		quote_flag;
+	int		i;
 
 	i = 0;
-    j = 0;
-	flag = 0;
-	while (str[i])
+	while (*sep_pipe)
 	{
-		if (str[i] == '$' && flag == 0)
+		word_count = 0;
+		command_same(&sep_pipe, &flag);
+		while ((*sep_pipe != ' ' && *sep_pipe) || quote_flag)
 		{
-			j += num_env_word(&str[i + 1], env);
+			flag_quote(&sep_pipe, &quote_flag);
+			if ((*sep_pipe == '<' || *sep_pipe == '>') && quote_flag == 0)
+				break ;
+			if (flag == 0 && option[i])
+			{
+				option[i][word_count] = *sep_pipe;
+			}
+			word_count++;
+			sep_pipe++;
 		}
-		if (str[i] == '\'')
-		{
-			if (flag == 0)
-				flag = 1;
-			else
-				flag = 0;
-		}
-		i++;
+		if (flag == 0)
+			i++;
 	}
-    printf("i : %d\nj : %d\n", i, j);
-	src = malloc(sizeof(char) * (i + j + 1));
-    return (src);
 }
+
+char	**get_cmd_option(char *sep_pipe)
+{
+	char	**option;
+	char	*str;
+	int		count;
+
+	count = num_option(sep_pipe);
+	option = (char **)malloc(sizeof(char *) * count + 1);
+	if (option == 0)
+		return (0);
+	option[count] = NULL;
+	word_count(option, sep_pipe);
+	put_word(option, sep_pipe);
+	return (option);
+}
+
 int main()
 {
-    char str[] = "$as$$$$$$dd$QQ$ABC$nxQ$";
-    t_list *env;
+	int i = 0;
+    char str[] = "<a ls \"asd bsas\"  \"asdasda\" >a>b-k";
+	char **option;
 
-    env = malloc(sizeof(t_list) * 1); 
-    env->env = "ABC=12345";
-    env->next = NULL;
-    quote(str, env);
+	option = get_cmd_option(str);
+	while (option[i])
+	{
+		printf("%s\n", option[i]);
+		i++;
+	}
 }
